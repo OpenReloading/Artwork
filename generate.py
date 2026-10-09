@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""Builds the OpenReloading, AutoLever and Ballistics marks from the hand-made set in original/.
+
+The open cog is generated (one closed outline, measured from original/openreloading-icon.svg); the case head, the
+wordmark lettering and the light/dark lockup files come from original/ unchanged. Needs rsvg-convert and ImageMagick 7.
+Usage: python3 generate.py            writes openreloading/, autolever/, ballistics/
+       python3 generate.py tooth      variant with the gap cut through the end teeth, written to .build/variant-tooth/
+"""
+import re, math, pathlib, subprocess, sys
+STYLE = sys.argv[1] if len(sys.argv) > 1 else "ring"
+HERE = pathlib.Path(__file__).resolve().parent
+ORIG = HERE / "original"
+BUILD = HERE / ".build"; BUILD.mkdir(exist_ok=True)
+DEST = {n: HERE / n for n in ("openreloading", "autolever", "ballistics")}
+if STYLE != "ring":
+    DEST = {k: BUILD / f"variant-{STYLE}" / k for k in DEST}
+SRC = {"openreloading": "openreloading", "autolever": "autolever", "ballistics": "openballistics"}
+
+def subpaths(svg):
+    d = re.search(r'\bd="([^"]*)"', svg).group(1)
+    return [x for x in re.split(r'(?=M)', d) if x.strip()]
+OR = subpaths((ORIG / "openreloading-icon.svg").read_text())
+CX, CY = 149.02, 625.97          # fitted centre of the original open cog, in its own coordinates
+
+R_IN, R_OUT, R_TIP = 55.4, 70.2, 84.5        # measured on the original cog
+CUT_L, CUT_R = 6.5, 68.5                      # "tooth" style: radial cut faces through the end teeth, symmetric about 37.5 deg
+BASE_HW, TIP_HW = 11.5, 8.0                   # tooth half-widths in degrees at the ring and at the tip
+RHO = 2.6                                     # corner radius: outline is inset by RHO and stroked RHO*2 with round joins
+TEETH = [77.5 + 40 * k for k in range(8)]     # 9 positions on a 40 deg pitch, the one at 37.5 (gap centre) left out
+def P(r, a):
+    t = math.radians(a - 90); return (CX + r * math.cos(t), CY + r * math.sin(t))
+def cog(col):
+    """one closed outline of the open cog; corners rounded by stroking the inset outline with round joins"""
+    cl, cr = (CUT_L, CUT_R) if STYLE == "tooth" else (16.5, 58.5)   # "ring": cut through the plain ring past whole teeth
+    ri, ro, rt = R_IN + RHO, R_OUT - RHO, R_TIP - RHO
+    da = lambda r: math.degrees(RHO / r)
+    def seg(r, a_from, a_to):                       # sampled arc at radius r, from a_from down to a_to
+        n = max(2, int(abs(a_from - a_to) / 2) + 1)
+        return [P(r, a_from + (a_to - a_from) * k / n) for k in range(n + 1)]
+    pts = seg(ri, cr + da(ri), cl + 360 - da(ri))   # inner edge, clockwise
+    outer = [(c - BASE_HW, c + BASE_HW, c - TIP_HW, c + TIP_HW) for c in TEETH]
+    if STYLE == "tooth":
+        bl, br, tl, tr = outer[0]; outer[0] = (cr, br, cr, tr)
+        bl, br, tl, tr = outer[-1]; outer[-1] = (bl, cl + 360, tl, cl + 360)
+    a = cl + 360
+    for bl, br, tl, tr in reversed(outer):
+        if br < a - 1e-6: pts += seg(ro, a - da(ro), br + da(ro))
+        pts.append(P(rt, tr - da(rt))); pts.append(P(rt, tl + da(rt)))
+        a = bl
+    if a > cr + 1e-6: pts += seg(ro, a - da(ro), cr + da(ro))
+    d = "M" + "L".join(f"{x:.2f} {y:.2f}" for x, y in pts) + "Z"
+    return f'<path d="{d}" stroke="{col}" stroke-width="{2*RHO}" stroke-linejoin="round"/>'
+def case_head():
+    # the original case head, 5 % smaller so a hairline of background separates it from the ring as in the original
+    return f'<path fill-rule="evenodd" transform="translate({CX} {CY}) scale(0.95) translate({-CX} {-CY})" d="{"".join(OR[1:])}"/>'
+def circ(cx, cy, r):
+    return f"M{cx-r:.2f} {cy:.2f}a{r} {r} 0 1 0 {2*r} 0a{r} {r} 0 1 0 {-2*r} 0"
+LEV_ANG, LEV_L = 37.5, 104                    # lever through the gap: hub with pivot hole, bar, knob (sizes from the original lever)
+def lever(col):
+    bx, by = P(LEV_L, LEV_ANG); sx, sy = P(18, LEV_ANG)
+    return (f'<path d="M{sx:.2f} {sy:.2f}L{bx:.2f} {by:.2f}" fill="none" stroke="{col}" stroke-width="21.4" stroke-linecap="round"/>\n'
+            f'<path fill-rule="evenodd" d="{circ(CX, CY, 22.7)}{circ(CX, CY, 5)}"/>\n'
+            f'<circle cx="{bx:.2f}" cy="{by:.2f}" r="22.6"/>')
+def curve(col):
+    # pressure curve chart; curve and baseline reach 4 units into the ring on both sides
+    y0 = CY + 30; hw = math.sqrt(R_IN**2 - 30**2) + 4
+    base = f'<path d="M{CX-hw:.1f} {y0:.1f}H{CX+hw:.1f}" fill="none" stroke="{col}" stroke-width="6" stroke-linecap="round"/>'
+    d = (f"M{CX-hw+2:.1f} {y0:.1f}C{CX-38:.1f} {y0:.1f} {CX-30:.1f} {CY-38:.1f} {CX-14:.1f} {CY-38:.1f}"
+         f"C{CX-2:.1f} {CY-38:.1f} {CX+4:.1f} {y0-6:.1f} {CX+hw-2:.1f} {y0:.1f}")
+    return base + "\n" + f'<path d="{d}" fill="none" stroke="{col}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>'
+def mark(name, col):
+    if name == "openreloading": return cog(col) + "\n" + case_head()
+    if name == "autolever": return cog(col) + "\n" + lever(col)
+    return cog(col) + "\n" + curve(col)
+E = 212.3                                     # icon square: the same for all three marks, cog centred
+def icon(name, col="#000"):
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{CX-E/2:.2f} {CY-E/2:.2f} {E} {E}" fill="currentColor" color="{col}" role="img" aria-label="{name}">\n'
+            f'{mark(name, "currentColor")}\n</svg>\n')
+# lockups: the original light/dark files with the first path (the old mark) swapped for the new one, in the old mark's place,
+# without the background rect so they sit on the page colour
+PLACE = {"openreloading": "", "autolever": f'transform="translate({922-CX:.2f} {639-CY:.2f})"', "ballistics": 'transform="translate(-0.04 -1.39)"'}
+def lockup(name, variant):
+    s = (ORIG / f"{SRC[name]}-{variant}.svg").read_text()
+    s = re.sub(r'<rect width="\d+" height="\d+" fill="#(?:fff|000)"/>', "", s, count=1)
+    col = "#fff" if variant == "dark" else "#000"
+    m = re.search(r'<path\b[^>]*fill-rule="evenodd"[^>]*/>', s)
+    return s[:m.start()] + f'<g {PLACE[name]}>\n{mark(name, col)}\n</g>' + s[m.end():]
+
+def run(*a): subprocess.run(a, check=True)
+for name, out in DEST.items():
+    out.mkdir(parents=True, exist_ok=True)
+    (out / f"{name}-icon.svg").write_text(icon(name))
+    (out / f"{name}-light.svg").write_text(lockup(name, "light"))
+    (out / f"{name}-dark.svg").write_text(lockup(name, "dark"))
+    (BUILD / "i.svg").write_text(icon(name, "#fff")); run("rsvg-convert", "-w", "880", "-h", "880", "-o", str(BUILD / "i.png"), str(BUILD / "i.svg"))
+    run("magick", str(BUILD / "i.png"), "-background", "black", "-gravity", "center", "-extent", "1024x1024", "-alpha", "remove", str(out / f"{name}-icon-1024.png"))
+    run("rsvg-convert", "-w", "1120", "-o", str(BUILD / "w.png"), str(out / f"{name}-dark.svg"))
+    run("magick", str(BUILD / "w.png"), "-fuzz", "5%", "-trim", "+repage", "-background", "black", "-gravity", "center", "-extent", "1280x640", "-alpha", "remove", str(out / f"{name}-social-1280x640.png"))
+print("ok:", ", ".join(str(d.relative_to(HERE)) for d in DEST.values()))
