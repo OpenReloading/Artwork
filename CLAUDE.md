@@ -11,7 +11,7 @@ Logos of the OpenReloading org and its projects. `generate.py` builds every file
 - AutoLever: cog + lever through the gap at 37.5°: hub r 22.7 with r 5 pivot hole, bar 21.4 wide from r 18 to r 104, knob r 22.6. Sizes measured from the hand-made lever, length shortened so the knob stays inside the icon square.
 - Ballistics: cog + pressure-curve chart inside: baseline 30 below centre, curve and baseline reach 4 units into the ring on both sides, peak 38 above centre, 14 left of centre.
 - Wordmarks: lettering outlined at build time from Fira Sans (SIL OFL) with fontTools, first word bold, second regular, manual kerning for Au/Le/ev/Re; Ballistics gets "OpenReloading" small above "Ballistics" bold. Layout: the icon square scaled so the cog is 100 tall, text 43 (20 for the small line), 4 units gap after the square. Transparent, `color` set per variant.
-- PNGs: icon 880 px white mark on a 1024 black square (avatars), social 1120 px wide dark wordmark on 1280 × 640 black.
+- PNGs: icon 880 px white mark on a 1024 black square (avatars); `-light-1280x640.png` (black on white) and `-dark-1280x640.png` (white on black) wordmarks, 1120 px wide content. README shows both; the dark one is the GitHub social preview.
 
 ## Adding a mark
 
@@ -19,4 +19,4 @@ Add a name to `DEST` and `WORDS`, and a `mark()` branch that returns `cog(col)` 
 
 ## Where files go on GitHub
 
-GitHub has no per-repo logo. Org avatar: `openreloading/openreloading-icon-1024.png`. Repo social preview: that repo's `*-social-1280x640.png`. READMEs show the wordmark with `<picture>` (light/dark). AutoLever's site copies `autolever-icon.svg` as header logo and wraps it on a white rounded square for the favicon.
+GitHub has no per-repo logo. Org avatar: `openreloading/openreloading-icon-1024.png`. Repo social preview: that repo's `*-dark-1280x640.png`. READMEs show the wordmark with `<picture>` (light/dark). AutoLever's site copies `autolever-icon.svg` as header logo and wraps it on a white rounded square for the favicon.

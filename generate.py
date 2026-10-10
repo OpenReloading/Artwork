@@ -115,6 +115,7 @@ for name, out in DEST.items():
     (out / f"{name}-dark.svg").write_text(lockup(name, "dark"))
     (BUILD / "i.svg").write_text(icon(name, "#fff")); run("rsvg-convert", "-w", "880", "-h", "880", "-o", str(BUILD / "i.png"), str(BUILD / "i.svg"))
     run("magick", str(BUILD / "i.png"), "-background", "black", "-gravity", "center", "-extent", "1024x1024", "-alpha", "remove", str(out / f"{name}-icon-1024.png"))
-    run("rsvg-convert", "-w", "1120", "-o", str(BUILD / "w.png"), str(out / f"{name}-dark.svg"))
-    run("magick", str(BUILD / "w.png"), "-fuzz", "5%", "-trim", "+repage", "-background", "black", "-gravity", "center", "-extent", "1280x640", "-alpha", "remove", str(out / f"{name}-social-1280x640.png"))
+    for variant, bg in (("light", "white"), ("dark", "black")):   # wordmark on a background, 1280 x 640; the dark one is the GitHub social preview
+        run("rsvg-convert", "-w", "1120", "-o", str(BUILD / "w.png"), str(out / f"{name}-{variant}.svg"))
+        run("magick", str(BUILD / "w.png"), "-fuzz", "5%", "-trim", "+repage", "-background", bg, "-gravity", "center", "-extent", "1280x640", "-alpha", "remove", str(out / f"{name}-{variant}-1280x640.png"))
 print("ok:", ", ".join(str(d.relative_to(HERE)) for d in DEST.values()))
