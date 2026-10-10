@@ -1,26 +1,21 @@
 #!/usr/bin/env python3
-"""Builds the OpenReloading, AutoLever and Ballistics marks from the hand-made set in original/.
+"""Builds the OpenReloading, AutoLever and Ballistics marks. See CLAUDE.md for the construction.
 
-The open cog is generated (one closed outline, measured from original/openreloading-icon.svg); the case head, the
-wordmark lettering and the light/dark lockup files come from original/ unchanged. Needs rsvg-convert and ImageMagick 7.
+Needs rsvg-convert and ImageMagick 7.
 Usage: python3 generate.py            writes openreloading/, autolever/, ballistics/
        python3 generate.py tooth      variant with the gap cut through the end teeth, written to .build/variant-tooth/
 """
 import re, math, pathlib, subprocess, sys
 STYLE = sys.argv[1] if len(sys.argv) > 1 else "ring"
 HERE = pathlib.Path(__file__).resolve().parent
-ORIG = HERE / "original"
+LETTERING = HERE / "lettering"
 BUILD = HERE / ".build"; BUILD.mkdir(exist_ok=True)
 DEST = {n: HERE / n for n in ("openreloading", "autolever", "ballistics")}
 if STYLE != "ring":
     DEST = {k: BUILD / f"variant-{STYLE}" / k for k in DEST}
-SRC = {"openreloading": "openreloading", "autolever": "autolever", "ballistics": "openballistics"}
 
-def subpaths(svg):
-    d = re.search(r'\bd="([^"]*)"', svg).group(1)
-    return [x for x in re.split(r'(?=M)', d) if x.strip()]
-OR = subpaths((ORIG / "openreloading-icon.svg").read_text())
-CX, CY = 149.02, 625.97          # fitted centre of the original open cog, in its own coordinates
+CX, CY = 149.02, 625.97          # centre of the cog, in the coordinates of the hand-made organisation mark the case head comes from
+CASE_HEAD = "M151.15 672.38C158.35 671.88 165.15 670.34 171.45 666.71C197.81 651.48 204.15 617.09 183.58 594.48C178.56 588.96 172.4 585.43 165.61 582.62C160 580.29 153.21 579.58 147.18 579.86C140.64 580.16 134.48 581.94 128.63 584.79C91.4 602.95 94.74 657.2 134.3 670.07C139.68 671.82 145.47 672.76 151.15 672.38ZM150 647.75C144.94 647.91 140.02 646.38 136.11 643.1C121.64 630.94 129.32 607.01 148.4 606.14C153.36 605.91 158.36 607.51 162.19 610.67C176.81 622.72 169.09 647.16 150 647.75ZM150.58 643.25C167.48 641.56 171.28 618.11 155.29 611.75C152.96 610.82 150.39 610.08 147.85 610.38C132.37 612.2 126.96 633.17 140.92 641.11C143.84 642.77 147.21 643.59 150.58 643.25Z"
 
 R_IN, R_OUT, R_TIP = 55.4, 70.2, 84.5        # measured on the original cog
 CUT_L, CUT_R = 6.5, 68.5                      # "tooth" style: radial cut faces through the end teeth, symmetric about 37.5 deg
@@ -52,7 +47,7 @@ def cog(col):
     return f'<path d="{d}" stroke="{col}" stroke-width="{2*RHO}" stroke-linejoin="round"/>'
 def case_head():
     # the original case head, 5 % smaller so a hairline of background separates it from the ring as in the original
-    return f'<path fill-rule="evenodd" transform="translate({CX} {CY}) scale(0.95) translate({-CX} {-CY})" d="{"".join(OR[1:])}"/>'
+    return f'<path fill-rule="evenodd" transform="translate({CX} {CY}) scale(0.95) translate({-CX} {-CY})" d="{CASE_HEAD}"/>'
 def circ(cx, cy, r):
     return f"M{cx-r:.2f} {cy:.2f}a{r} {r} 0 1 0 {2*r} 0a{r} {r} 0 1 0 {-2*r} 0"
 LEV_ANG, LEV_L = 37.5, 104                    # lever through the gap: hub with pivot hole, bar, knob (sizes from the original lever)
@@ -76,15 +71,12 @@ E = 212.3                                     # icon square: the same for all th
 def icon(name, col="#000"):
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{CX-E/2:.2f} {CY-E/2:.2f} {E} {E}" fill="currentColor" color="{col}" role="img" aria-label="{name}">\n'
             f'{mark(name, "currentColor")}\n</svg>\n')
-# lockups: the original light/dark files with the first path (the old mark) swapped for the new one, in the old mark's place,
-# without the background rect so they sit on the page colour
+# lockups: lettering/<name>.svg holds the outlined wordmark lettering with a "<!-- mark -->" slot where the mark goes
 PLACE = {"openreloading": "", "autolever": f'transform="translate({922-CX:.2f} {639-CY:.2f})"', "ballistics": 'transform="translate(-0.04 -1.39)"'}
 def lockup(name, variant):
-    s = (ORIG / f"{SRC[name]}-{variant}.svg").read_text()
-    s = re.sub(r'<rect width="\d+" height="\d+" fill="#(?:fff|000)"/>', "", s, count=1)
     col = "#fff" if variant == "dark" else "#000"
-    m = re.search(r'<path\b[^>]*fill-rule="evenodd"[^>]*/>', s)
-    return s[:m.start()] + f'<g {PLACE[name]}>\n{mark(name, col)}\n</g>' + s[m.end():]
+    s = (LETTERING / f"{name}.svg").read_text().replace("<svg ", f'<svg color="{col}" ', 1)
+    return s.replace("<!-- mark -->", f'<g {PLACE[name]}>\n{mark(name, col)}\n</g>')
 
 def run(*a): subprocess.run(a, check=True)
 for name, out in DEST.items():
