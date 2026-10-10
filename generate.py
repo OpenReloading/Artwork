@@ -68,7 +68,7 @@ def mark(name, col):
     return cog(col) + "\n" + curve(col)
 E = 212.3                                     # icon square: the same for all three marks, cog centred
 def icon(name, col="#000"):
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{CX-E/2:.2f} {CY-E/2:.2f} {E} {E}" fill="currentColor" color="{col}" role="img" aria-label="{name}">\n'
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{CX-E/2:.2f} {CY-E/2:.2f} {E} {E}" fill="currentColor" color="{col}" role="img" aria-label="{label(name)}">\n'
             f'{mark(name, "currentColor")}\n</svg>\n')
 # wordmarks: lettering outlined from a font at build time, first word bold, second regular
 FONT = "Fira Sans"
@@ -91,21 +91,23 @@ def text_path(text, weight, size, x, y):
         pen = SVGPathPen(gs); gs[g].draw(TransformPen(pen, (sc, 0, 0, -sc, px, y))); d.append(pen.getCommands())
         px += hm[g][0] * sc
     return " ".join(d), px - x
-WORDS = {"openreloading": ("Open", "Reloading"), "autolever": ("Auto", "Lever"), "ballistics": ("Ballistics", "")}
+ORG = "openreloading"
+WORDS = {ORG: ("Open", "Reloading"), "autolever": ("Auto", "Lever"), "ballistics": ("Ballistics",)}   # first word bold, the rest regular
+def lines(name):  # (words, size, baseline) per text line; project marks carry the org name small above
+    return [(WORDS[name], 43, 78)] if name == ORG else [(WORDS[ORG], 20, 52), (WORDS[name], 43, 100)]
+def label(name): return " ".join("".join(w) for w, *_ in lines(name))
 def lockup(name, variant):
     col = "#fff" if variant == "dark" else "#000"
     H = 126; sc = H / E                                       # the icon square scaled so the cog is 100 tall
     g = f'<g transform="scale({sc:.4f}) translate({E/2-CX:.2f} {E/2-CY:.2f})">\n{mark(name, col)}\n</g>'
-    tx = H + 4; lines = []                                    # (bold, regular, size, baseline)
-    if name != "openreloading": lines.append(("Open", "Reloading", 20, 52))   # project marks carry the org name small above
-    lines.append(WORDS[name] + (43, 100 if lines else 78))
-    paths, W = [], 0
-    for a, b, size, y in lines:
-        d1, w1 = text_path(a, "bold", size, tx, y); d2, w2 = text_path(b, "regular", size, tx + w1, y)
-        paths += [f'<path d="{d}"/>' for d in (d1, d2) if d]; W = max(W, tx + w1 + w2)
-    label = " ".join(a + b for a, b, *_ in lines); paths = "".join(paths)
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W+6:.1f} {H}" fill="currentColor" color="{col}" role="img" aria-label="{label}">\n'
-            f'{g}\n{paths}\n</svg>\n')
+    tx = H + 4; paths = []; W = 0
+    for words, size, y in lines(name):
+        x = tx
+        for i, w in enumerate(words):
+            d, adv = text_path(w, "regular" if i else "bold", size, x, y); paths.append(f'<path d="{d}"/>'); x += adv
+        W = max(W, x)
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W+6:.1f} {H}" fill="currentColor" color="{col}" role="img" aria-label="{label(name)}">\n'
+            f'{g}\n{"".join(paths)}\n</svg>\n')
 
 def run(*a): subprocess.run(a, check=True)
 for name, out in DEST.items():
@@ -114,8 +116,8 @@ for name, out in DEST.items():
     (out / f"{name}-light.svg").write_text(lockup(name, "light"))
     (out / f"{name}-dark.svg").write_text(lockup(name, "dark"))
     (BUILD / "i.svg").write_text(icon(name, "#fff")); run("rsvg-convert", "-w", "880", "-h", "880", "-o", str(BUILD / "i.png"), str(BUILD / "i.svg"))
-    run("magick", str(BUILD / "i.png"), "-background", "black", "-gravity", "center", "-extent", "1024x1024", "-alpha", "remove", str(out / f"{name}-icon-1024.png"))
+    run("magick", "-define", "png:exclude-chunk=date,tIME", str(BUILD / "i.png"), "-background", "black", "-gravity", "center", "-extent", "1024x1024", "-alpha", "remove", str(out / f"{name}-icon-1024.png"))
     for variant, bg in (("light", "white"), ("dark", "black")):   # wordmark on a background, 1280 x 640; the dark one is the GitHub social preview
         run("rsvg-convert", "-w", "1120", "-o", str(BUILD / "w.png"), str(out / f"{name}-{variant}.svg"))
-        run("magick", str(BUILD / "w.png"), "-fuzz", "5%", "-trim", "+repage", "-background", bg, "-gravity", "center", "-extent", "1280x640", "-alpha", "remove", str(out / f"{name}-{variant}-1280x640.png"))
+        run("magick", "-define", "png:exclude-chunk=date,tIME", str(BUILD / "w.png"), "-fuzz", "5%", "-trim", "+repage", "-background", bg, "-gravity", "center", "-extent", "1280x640", "-alpha", "remove", str(out / f"{name}-{variant}-1280x640.png"))
 print("ok:", ", ".join(str(d.relative_to(HERE)) for d in DEST.values()))
