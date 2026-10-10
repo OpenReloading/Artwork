@@ -8,4 +8,6 @@ Each folder has `<name>-icon.svg` (mark only, `currentColor`), `<name>-light.svg
 
 `python3 generate.py` rebuilds everything (needs fontTools, the Fira Sans font, rsvg-convert and ImageMagick 7). Construction and rules: `CLAUDE.md`.
 
+Built by reloaders for reloaders, with AI as a tool.
+
 MIT licence. The names identify these projects; use the marks to refer to them, not to suggest endorsement.
