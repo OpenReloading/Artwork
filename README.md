@@ -8,4 +8,4 @@ Logos of OpenReloading and its projects.
 | <img src="autolever/autolever-light-1280x640.png" width="400" alt="OpenReloading AutoLever on white"> | <img src="autolever/autolever-dark-1280x640.png" width="400" alt="OpenReloading AutoLever on black"> |
 | <img src="ballistics/ballistics-light-1280x640.png" width="400" alt="OpenReloading Ballistics on white"> | <img src="ballistics/ballistics-dark-1280x640.png" width="400" alt="OpenReloading Ballistics on black"> |
 
-Built by reloaders for reloaders, with AI as a tool.
+Built by reloaders for reloaders, supported by generative AI.
