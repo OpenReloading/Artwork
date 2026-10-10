@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """Builds the OpenReloading, AutoLever and Ballistics marks. See CLAUDE.md for the construction.
 
-Needs rsvg-convert and ImageMagick 7.
+Needs python3 with fontTools (pip install fonttools), the Fira Sans font (fontconfig), rsvg-convert and ImageMagick 7.
 Usage: python3 generate.py            writes openreloading/, autolever/, ballistics/
        python3 generate.py tooth      variant with the gap cut through the end teeth, written to .build/variant-tooth/
 """
 import re, math, pathlib, subprocess, sys
 STYLE = sys.argv[1] if len(sys.argv) > 1 else "ring"
 HERE = pathlib.Path(__file__).resolve().parent
-LETTERING = HERE / "lettering"
 BUILD = HERE / ".build"; BUILD.mkdir(exist_ok=True)
 DEST = {n: HERE / n for n in ("openreloading", "autolever", "ballistics")}
 if STYLE != "ring":
@@ -71,12 +70,42 @@ E = 212.3                                     # icon square: the same for all th
 def icon(name, col="#000"):
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{CX-E/2:.2f} {CY-E/2:.2f} {E} {E}" fill="currentColor" color="{col}" role="img" aria-label="{name}">\n'
             f'{mark(name, "currentColor")}\n</svg>\n')
-# lockups: lettering/<name>.svg holds the outlined wordmark lettering with a "<!-- mark -->" slot where the mark goes
-PLACE = {"openreloading": "", "autolever": f'transform="translate({922-CX:.2f} {639-CY:.2f})"', "ballistics": 'transform="translate(-0.04 -1.39)"'}
+# wordmarks: lettering outlined from a font at build time, first word bold, second regular
+FONT = "Fira Sans"
+KERN = {"Au": -0.07, "Le": -0.03, "ev": -0.015, "Re": -0.01}      # em, pairs that sit loose without the font's own kerning
+def load_font(weight):
+    from fontTools.ttLib import TTFont
+    path = subprocess.run(["fc-match", "-f", "%{file}", f"{FONT}:{weight}"], capture_output=True, text=True, check=True).stdout
+    if FONT.lower().replace(" ", "") not in path.lower().replace(" ", ""): print(f"warning: {FONT} {weight} not installed, fontconfig gave {path}")
+    return TTFont(path)
+FONTS = {}
+def text_path(text, weight, size, x, y):
+    """outlined text at baseline (x, y); returns (path d, advance)"""
+    from fontTools.pens.svgPathPen import SVGPathPen
+    from fontTools.pens.transformPen import TransformPen
+    f = FONTS.setdefault(weight, load_font(weight)); gs = f.getGlyphSet(); cmap = f.getBestCmap(); hm = f["hmtx"]
+    sc = size / f["head"].unitsPerEm; d, px = [], x
+    for i, ch in enumerate(text):
+        g = cmap[ord(ch)]
+        if i: px += KERN.get(text[i - 1] + ch, 0) * size
+        pen = SVGPathPen(gs); gs[g].draw(TransformPen(pen, (sc, 0, 0, -sc, px, y))); d.append(pen.getCommands())
+        px += hm[g][0] * sc
+    return " ".join(d), px - x
+WORDS = {"openreloading": ("Open", "Reloading"), "autolever": ("Auto", "Lever"), "ballistics": ("Open", "Reloading")}
 def lockup(name, variant):
     col = "#fff" if variant == "dark" else "#000"
-    s = (LETTERING / f"{name}.svg").read_text().replace("<svg ", f'<svg color="{col}" ', 1)
-    return s.replace("<!-- mark -->", f'<g {PLACE[name]}>\n{mark(name, col)}\n</g>')
+    H = 126; sc = H / E                                       # the icon square scaled so the cog is 100 tall
+    g = f'<g transform="scale({sc:.4f}) translate({E/2-CX:.2f} {E/2-CY:.2f})">\n{mark(name, col)}\n</g>'
+    tx = H + 4; a, b = WORDS[name]
+    if name == "ballistics":
+        d1, w1 = text_path(a, "bold", 20, tx, 52); d2, w2 = text_path(b, "regular", 20, tx + w1, 52)
+        d3, w3 = text_path("Ballistics", "bold", 43, tx, 100); W = tx + max(w1 + w2, w3); label = "OpenReloading Ballistics"
+        paths = f'<path d="{d1}"/><path d="{d2}"/><path d="{d3}"/>'
+    else:
+        d1, w1 = text_path(a, "bold", 43, tx, 78); d2, w2 = text_path(b, "regular", 43, tx + w1, 78); W = tx + w1 + w2; label = a + b
+        paths = f'<path d="{d1}"/><path d="{d2}"/>'
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W+6:.1f} {H}" fill="currentColor" color="{col}" role="img" aria-label="{label}">\n'
+            f'{g}\n{paths}\n</svg>\n')
 
 def run(*a): subprocess.run(a, check=True)
 for name, out in DEST.items():
