@@ -91,19 +91,19 @@ def text_path(text, weight, size, x, y):
         pen = SVGPathPen(gs); gs[g].draw(TransformPen(pen, (sc, 0, 0, -sc, px, y))); d.append(pen.getCommands())
         px += hm[g][0] * sc
     return " ".join(d), px - x
-WORDS = {"openreloading": ("Open", "Reloading"), "autolever": ("Auto", "Lever"), "ballistics": ("Open", "Reloading")}
+WORDS = {"openreloading": ("Open", "Reloading"), "autolever": ("Auto", "Lever"), "ballistics": ("Ballistics", "")}
 def lockup(name, variant):
     col = "#fff" if variant == "dark" else "#000"
     H = 126; sc = H / E                                       # the icon square scaled so the cog is 100 tall
     g = f'<g transform="scale({sc:.4f}) translate({E/2-CX:.2f} {E/2-CY:.2f})">\n{mark(name, col)}\n</g>'
-    tx = H + 4; a, b = WORDS[name]
-    if name == "ballistics":
-        d1, w1 = text_path(a, "bold", 20, tx, 52); d2, w2 = text_path(b, "regular", 20, tx + w1, 52)
-        d3, w3 = text_path("Ballistics", "bold", 43, tx, 100); W = tx + max(w1 + w2, w3); label = "OpenReloading Ballistics"
-        paths = f'<path d="{d1}"/><path d="{d2}"/><path d="{d3}"/>'
-    else:
-        d1, w1 = text_path(a, "bold", 43, tx, 78); d2, w2 = text_path(b, "regular", 43, tx + w1, 78); W = tx + w1 + w2; label = a + b
-        paths = f'<path d="{d1}"/><path d="{d2}"/>'
+    tx = H + 4; lines = []                                    # (bold, regular, size, baseline)
+    if name != "openreloading": lines.append(("Open", "Reloading", 20, 52))   # project marks carry the org name small above
+    lines.append(WORDS[name] + (43, 100 if lines else 78))
+    paths, W = [], 0
+    for a, b, size, y in lines:
+        d1, w1 = text_path(a, "bold", size, tx, y); d2, w2 = text_path(b, "regular", size, tx + w1, y)
+        paths += [f'<path d="{d}"/>' for d in (d1, d2) if d]; W = max(W, tx + w1 + w2)
+    label = " ".join(a + b for a, b, *_ in lines); paths = "".join(paths)
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W+6:.1f} {H}" fill="currentColor" color="{col}" role="img" aria-label="{label}">\n'
             f'{g}\n{paths}\n</svg>\n')
 
