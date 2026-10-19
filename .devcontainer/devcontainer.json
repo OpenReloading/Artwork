@@ -1,0 +1,8 @@
+{
+  "name": "Artwork",
+  "build": { "dockerfile": "Dockerfile" },
+  "runArgs": ["--userns=keep-id"],
+  "containerUser": "dev",
+  "remoteUser": "dev",
+  "updateRemoteUserUID": false
+}
