@@ -30,3 +30,13 @@ Add a name to `DEST` and `WORDS`, and a `mark()` branch that returns `cog(col)` 
 ## Where files go on GitHub
 
 GitHub has no per-repo logo. Org avatar: `openreloading/openreloading-icon-1024.png`. Repo social preview: that repo's `*-dark-1280x640.png`. READMEs show the wordmark with `<picture>` (light/dark). AutoLever's site copies `autolever-icon.svg` as header logo and wraps it on a white rounded square for the favicon.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues of `OpenReloading/Artwork` (`gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
