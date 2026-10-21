@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Builds the OpenReloading, AutoLever and Ballistics marks. See AGENTS.md for the construction.
+"""Builds the OpenReloading, AutoLever, Ballistics and BuildGuide marks. See AGENTS.md for the construction.
 
 Needs python3 with fontTools (pip install fonttools), the Fira Sans font (fontconfig), rsvg-convert and ImageMagick 7.
-Usage: python3 generate.py            writes openreloading/, autolever/, ballistics/
+Usage: python3 generate.py            writes openreloading/, autolever/, ballistics/, buildguide/
        python3 generate.py tooth      variant with the gap cut through the end teeth, written to .build/variant-tooth/
 """
 import re, math, pathlib, subprocess, sys
 STYLE = sys.argv[1] if len(sys.argv) > 1 else "ring"
 HERE = pathlib.Path(__file__).resolve().parent
 BUILD = HERE / ".build"; BUILD.mkdir(exist_ok=True)
-DEST = {n: HERE / n for n in ("openreloading", "autolever", "ballistics")}
+DEST = {n: HERE / n for n in ("openreloading", "autolever", "ballistics", "buildguide")}
 if STYLE != "ring":
     DEST = {k: BUILD / f"variant-{STYLE}" / k for k in DEST}
 
@@ -62,11 +62,18 @@ def curve(col):
     d = (f"M{CX-hw+2:.1f} {y0:.1f}C{CX-38:.1f} {y0:.1f} {CX-30:.1f} {CY-38:.1f} {CX-14:.1f} {CY-38:.1f}"
          f"C{CX-2:.1f} {CY-38:.1f} {CX+4:.1f} {y0-6:.1f} {CX+hw-2:.1f} {y0:.1f}")
     return base + "\n" + f'<path d="{d}" fill="none" stroke="{col}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>'
+def page(col):
+    # document page inside the ring with a folded corner and two text lines, outer corners 10.8 clear of the ring
+    w, h, f = 23, 31, 14
+    x0, y0, x1, y1 = CX - w, CY - h, CX + w, CY + h
+    return (f'<path d="M{x0:.2f} {y0:.2f}H{x1-f:.2f}L{x1:.2f} {y0+f:.2f}V{y1:.2f}H{x0:.2f}ZM{x1-f:.2f} {y0:.2f}V{y0+f:.2f}H{x1:.2f}" fill="none" stroke="{col}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>\n'
+            f'<path d="M{CX-11:.2f} {CY-4:.2f}H{CX+11:.2f}M{CX-11:.2f} {CY+12:.2f}H{CX+11:.2f}" fill="none" stroke="{col}" stroke-width="9" stroke-linecap="round"/>')
 def mark(name, col):
     if name == "openreloading": return cog(col) + "\n" + case_head()
     if name == "autolever": return cog(col) + "\n" + lever(col)
+    if name == "buildguide": return cog(col) + "\n" + page(col)
     return cog(col) + "\n" + curve(col)
-E = 212.3                                     # icon square: the same for all three marks, cog centred
+E = 212.3                                     # icon square: the same for all marks, cog centred
 def icon(name, col="#000"):
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{CX-E/2:.2f} {CY-E/2:.2f} {E} {E}" fill="currentColor" color="{col}" role="img" aria-label="{label(name)}">\n'
             f'{mark(name, "currentColor")}\n</svg>\n')
@@ -92,7 +99,7 @@ def text_path(text, weight, size, x, y):
         px += hm[g][0] * sc
     return " ".join(d), px - x
 ORG = "openreloading"
-WORDS = {ORG: ("Open", "Reloading"), "autolever": ("Auto", "Lever"), "ballistics": ("Ballistics",)}   # first word bold, the rest regular
+WORDS = {ORG: ("Open", "Reloading"), "autolever": ("Auto", "Lever"), "ballistics": ("Ballistics",), "buildguide": ("Build", "Guide")}   # first word bold, the rest regular
 def lines(name):  # (words, size, baseline) per text line; project marks carry the org name small above
     return [(WORDS[name], 43, 78)] if name == ORG else [(WORDS[ORG], 20, 52), (WORDS[name], 43, 100)]
 def label(name): return " ".join("".join(w) for w, *_ in lines(name))
