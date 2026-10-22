@@ -9,4 +9,6 @@ Logos of OpenReloading and its projects.
 | <img src="ballistics/ballistics-light-1280x640.png" width="400" alt="OpenReloading Ballistics on white"> | <img src="ballistics/ballistics-dark-1280x640.png" width="400" alt="OpenReloading Ballistics on black"> |
 | <img src="buildguide/buildguide-light-1280x640.png" width="400" alt="OpenReloading BuildGuide on white"> | <img src="buildguide/buildguide-dark-1280x640.png" width="400" alt="OpenReloading BuildGuide on black"> |
 
+Questions and ideas: [Discord](https://discord.gg/KkYJ5fdukR).
+
 Built by reloaders for reloaders, supported by generative AI.
