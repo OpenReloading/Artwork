@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "setupVersion": "6.0.0",
+  "agents": [
+    "claude",
+    "codex"
+  ],
+  "env": "host-agent",
+  "sandbox": false,
+  "packs": [],
+  "singles": [],
+  "tier": null,
+  "paths": {},
+  "disabled": [],
+  "skills": []
+}
