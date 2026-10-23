@@ -11,6 +11,7 @@
 
 - `generate.py` builds every file from constants and a system font; edit the script, never the outputs.
 - Do not redesign the marks: new marks reuse the cog and add one element (user, 2026-10-10).
+- Branches: pull requests target `develop` (squash merge). `main` holds releases and changes only by a promotion pull request `develop` to `main`, merged with a merge commit.
 
 ## Construction (`generate.py`)
 
