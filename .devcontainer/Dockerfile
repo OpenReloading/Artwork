@@ -1,4 +1,4 @@
-FROM docker.io/library/archlinux:base-20260927.0.600689@sha256:b21322c663be387c0ed9cbc7bbbfe18e41633ad4e7b7c77cfad45f128be20040
+FROM docker.io/library/archlinux:base-20261011.0.609700@sha256:3c64b538588416593f69a1aebd2f2ec0f2541b29159f32556fa7def2167147a0
 
 # Arch Linux Archive snapshot with the host toolchain versions; librsvg 2.63.2-1 reached extra after it, so it comes from the package archive.
 RUN echo 'Server = https://archive.archlinux.org/repos/2026/10/01/$repo/os/$arch' > /etc/pacman.d/mirrorlist \
