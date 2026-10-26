@@ -11,7 +11,7 @@
 
 - `generate.py` builds every file from constants and a system font; edit the script, never the outputs.
 - Do not redesign the marks: new marks reuse the cog and add one element (user, 2026-10-10).
-- Branches: pull requests target `develop` (squash merge). `main` holds releases and changes only by a promotion pull request `develop` to `main`, merged with a merge commit. The `Promote` workflow (`.github/workflows/promote.yml`) opens and updates that pull request on every push to `develop`.
+- Branches: `main` is the only long-lived branch. Feature branches are short-lived; pull requests target `main` and are squash-merged, history stays linear.
 
 ## Construction (`generate.py`)
 
