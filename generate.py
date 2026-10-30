@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds the OpenReloading, AutoLever, Ballistics and BuildGuide marks. See AGENTS.md for the construction.
+"""Builds the OpenReloading, AutoLever, Ballistics and BuildGuide marks.
 
 Needs python3 with fontTools (pip install fonttools), the Fira Sans font (fontconfig), rsvg-convert and ImageMagick 7.
 Usage: python3 generate.py            writes openreloading/, autolever/, ballistics/, buildguide/
