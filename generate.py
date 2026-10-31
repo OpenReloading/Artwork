@@ -5,7 +5,7 @@ Needs python3 with fontTools (pip install fonttools), the Fira Sans font (fontco
 Usage: python3 generate.py            writes openreloading/, autolever/, ballistics/, buildguide/
        python3 generate.py tooth      variant with the gap cut through the end teeth, written to .build/variant-tooth/
 """
-import re, math, pathlib, subprocess, sys
+import math, pathlib, subprocess, sys
 STYLE = sys.argv[1] if len(sys.argv) > 1 else "ring"
 HERE = pathlib.Path(__file__).resolve().parent
 BUILD = HERE / ".build"; BUILD.mkdir(exist_ok=True)
